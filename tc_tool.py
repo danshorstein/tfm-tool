@@ -39,6 +39,9 @@ def tc_results(drs=None, crs=None):
 
     tcs = ', '.join(tcs) if tcs else None
 
+    if tcslen == 0:
+        return 'There are no transaction codes with debits of {} and credits of {}. '.format(drs, crs)
+
     if tcslen == 1:
         return 'There is {} transaction code that has debits of {} and credits of {}. '\
                'The transaction code is {}.'.format(len(result), drs, crs, tcs)
@@ -51,9 +54,15 @@ def tc_results(drs=None, crs=None):
 @ask.intent("SGLs")
 def sgls(sgl_accts):
 
-    sgl_accts = sgl_accts.replace(',','').replace('debits', 'debit').replace('credits', 'credit')
-
     try:
+
+        if not sgl_accts:
+            msg = 'I did not hear any SGL accounts. Please try again. You can say something like debit ten ten and credit twenty one ten.'
+            return statement(msg).simple_card('TFM Tool', msg)
+
+        sgl_accts = sgl_accts.replace(',','').replace('debits', 'debit')\
+                             .replace('credits', 'credit').replace(' 01','01')
+
         drs = re.findall('\d{4}', ''.join(sgl_accts.split('credit')[0]))
         crs = re.findall('\d{4}', ''.join(sgl_accts.split('credit')[-1])) if 'credit' in sgl_accts else None
 
@@ -63,8 +72,12 @@ def sgls(sgl_accts):
         elif drs:
             sgls = list(drs)
 
-        else:
+        elif crs:
             sgls = list(crs)
+
+        else:
+            msg = 'I did not hear any SGL accounts. Please try again. You can say something like debit ten ten and credit twenty one ten.'
+            return statement(msg).simple_card('TFM Tool', msg)
 
         msg = tc_results(drs, crs)
 
