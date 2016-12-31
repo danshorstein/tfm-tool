@@ -1,0 +1,109 @@
+import logging
+from flask import Flask
+from flask_ask import Ask, statement, question, session
+import re
+from ussgl import tc_lookup
+
+app = Flask(__name__)
+
+ask = Ask(app, "/")
+
+logging.getLogger("flask_ask").setLevel(logging.DEBUG)
+
+@ask.launch
+def hello():
+    welcome = "Welcome! What SGLs do you want to look up?"
+    return question(welcome).reprompt(welcome + 'You can say something like Debit ten ten and Credit thirteen ten.')
+
+
+def tc_results(drs=None, crs=None):
+    result = tc_lookup(drs,crs)
+
+
+    if drs:
+        if len(drs) > 1:
+            drs[-1] = 'and {}'.format(drs[-1])
+    if crs:
+        if len(crs) > 1:
+            crs[-1] = 'and {}'.format(crs[-1])
+
+    drs = ' '.join(drs) if drs else None
+    crs = ' '.join(crs) if crs else None
+
+    tcs = list(result.index)
+
+    tcslen = len(tcs) if tcs else 0
+
+    if tcslen > 1:
+        tcs[-1] = 'and {}'.format(tcs[-1])
+
+    tcs = ', '.join(tcs) if tcs else None
+
+    if tcslen == 1:
+        return 'There is {} transaction code that has debits of {} and credits of {}. '\
+               'The transaction code is {}.'.format(len(result), drs, crs, tcs)
+
+    else:
+        return 'There are {} transaction codes that have debits of {} and credits of {}. '\
+               'The transaction codes are {}.'.format(len(result), drs, crs, tcs)
+
+
+@ask.intent("SGLs")
+def sgls(sgl_accts):
+
+    sgl_accts = sgl_accts.replace(',','').replace('debits', 'debit').replace('credits', 'credit')
+
+    try:
+        drs = re.findall('\d{4}', ''.join(sgl_accts.split('credit')[0]))
+        crs = re.findall('\d{4}', ''.join(sgl_accts.split('credit')[-1])) if 'credit' in sgl_accts else None
+
+        if drs and crs:
+            sgls = list(drs + crs)
+
+        elif drs:
+            sgls = list(drs)
+
+        else:
+            sgls = list(crs)
+
+        msg = tc_results(drs, crs)
+
+        spoken_msg = str(msg)
+
+        for sgl in sgls:
+            print(sgl[:2] + ' ' + sgl[2:])
+            spoken_msg = spoken_msg.replace(sgl, sgl[:2]+' '+sgl[2:])
+
+        spoken_msg = spoken_msg.replace(' 00', ' hundred')
+
+        return statement(spoken_msg).simple_card('TFM Tool', msg)
+
+    except Exception as e:
+        msg = "Error: {}.".format(e)
+
+        return statement(msg).simple_card('TFM Tool', msg)
+
+
+
+@ask.intent('AMAZON.HelpIntent')
+def help():
+    speech_text = "T F M tool looks up ussgl transaction codes. It's fu-cking awesome."
+    reprompt_text = 'What SGLs would you like to lookup?'
+    return question(speech_text).reprompt(reprompt_text)
+
+
+@ask.intent('AMAZON.StopIntent')
+def stop():
+    msg = 'Bye bye!'
+    return statement(msg)
+
+
+@ask.intent('AMAZON.CancelIntent')
+def cancel():
+    msg = 'Bye bye!'
+    return statement(msg)
+
+
+if __name__ == '__main__':
+    # print(sgls('ask t f m tool for debits 3301').__dict__)
+    app.run(debug=True)
