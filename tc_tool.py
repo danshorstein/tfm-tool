@@ -100,7 +100,8 @@ def sgls(sgl_accts):
 
 @ask.intent('AMAZON.HelpIntent')
 def help():
-    speech_text = "T F M tool looks up ussgl transaction codes. It's fu-cking awesome."
+    speech_text = "T F M tool looks up ussgl transaction codes. Ask for one or more debits, one or more credits, or both. "\
+                  "You can say something like debit ten ten and credit twenty one ten. "
     reprompt_text = 'What SGLs would you like to lookup?'
     return question(speech_text).reprompt(reprompt_text)
 
