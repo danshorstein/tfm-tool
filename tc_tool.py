@@ -67,7 +67,20 @@ def sgls(sgl_accts):
                              .replace(' 801', ' 8801')\
                              .replace(' 802', ' 8802')\
                              .replace(' 803', ' 8803')\
-                             .replace(' 804', ' 8804')
+                             .replace(' 804', ' 8804')\
+                             .replace(' oh', '0')\
+                             .replace(' zero', '0')\
+                             .replace(' one', '1')\
+                             .replace(' two', '2')\
+                             .replace(' three', '3')\
+                             .replace(' four', '4')\
+                             .replace(' five', '5')\
+                             .replace(' six', '6')\
+                             .replace(' seven', '7')\
+                             .replace(' eighty', '8')\
+                             .replace(' eight', '8')\
+                             .replace(' nine', '9')
+        print(sgl_accts)
 
 
         drs = re.findall('\d{4}', ''.join(sgl_accts.split('credit')[0]))
@@ -126,6 +139,6 @@ def cancel():
 
 
 if __name__ == '__main__':
-    print(sgls('ask t f m tool for credit 2110').__dict__)
+    print(sgls('ask t f m tool for credit eighty eight oh one').__dict__)
     # print(sglify(['1,010']))
     # app.run(debug=True)
