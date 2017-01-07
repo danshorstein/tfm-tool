@@ -69,6 +69,7 @@ def sgls(sgl_accts):
                              .replace(' 803', ' 8803')\
                              .replace(' 804', ' 8804')\
                              .replace(' oh', '0')\
+                             .replace(' and', '0')\
                              .replace(' zero', '0')\
                              .replace(' one', '1')\
                              .replace(' two', '2')\
