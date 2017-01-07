@@ -3,6 +3,8 @@ from flask import Flask
 from flask_ask import Ask, statement, question, session
 import re
 from ussgl import tc_lookup
+from ussgl import df
+import difflib
 
 app = Flask(__name__)
 
@@ -16,9 +18,22 @@ def hello():
     return question(welcome).reprompt(welcome + 'You can say something like Debit ten ten and Credit thirteen ten.')
 
 
-def tc_results(drs=None, crs=None):
-    result = tc_lookup(drs,crs)
+def sglify(sgls_in):
+    sgls_list = str(df.Debits + df.Credits)
+    sgls_list = set(re.findall(r'(\d\d\d\d)\d\d', sgls_list))
+    sgls_out = []
+    for sgl in sgls_in:
+        try:
+            sgls_out.append(difflib.get_close_matches(sgl, sgls_list, cutoff=.7)[0])
+        except:
+            print('fuck shit up with {}'.format(sgl))
 
+    return sgls_out
+
+
+def tc_results(drs=None, crs=None):
+
+    result = tc_lookup(drs,crs)
 
     if drs:
         if len(drs) > 1:
@@ -40,16 +55,18 @@ def tc_results(drs=None, crs=None):
     tcs = ', '.join(tcs) if tcs else None
 
     if tcslen == 0:
-        return 'There are no transaction codes with debits of {} and credits of {}. '.format(drs, crs)
+        msg = 'There are no transaction codes with debits of {} and credits of {}. '.format(drs, crs)
 
-    if tcslen == 1:
-        return 'There is {} transaction code that has debits of {} and credits of {}. '\
+    elif tcslen == 1:
+        msg = 'There is {} transaction code that has debits of {} and credits of {}. '\
                'The transaction code is {}.'.format(len(result), drs, crs, tcs)
 
     else:
-        return 'There are {} transaction codes that have debits of {} and credits of {}. '\
+        msg = 'There are {} transaction codes that have debits of {} and credits of {}. '\
                'The transaction codes are {}.'.format(len(result), drs, crs, tcs)
 
+    msg = msg.replace('debits of None', 'no debits specified').replace('credits of None', 'no credits specified')
+    return msg
 
 @ask.intent("SGLs")
 def sgls(sgl_accts):
@@ -61,18 +78,27 @@ def sgls(sgl_accts):
             return statement(msg).simple_card('TFM Tool', msg)
 
         sgl_accts = sgl_accts.replace(',','').replace('debits', 'debit')\
-                             .replace('credits', 'credit').replace(' 01','01')
+                             .replace('credits', 'credit').replace(' 01','01')\
+                             .replace(' 801', ' 8801')\
+                             .replace(' 802', ' 8802')\
+                             .replace(' 803', ' 8803')\
+                             .replace(' 804', ' 8804')
 
-        drs = re.findall('\d{4}', ''.join(sgl_accts.split('credit')[0]))
-        crs = re.findall('\d{4}', ''.join(sgl_accts.split('credit')[-1])) if 'credit' in sgl_accts else None
+
+        drs = re.findall('\d{3,4}', ''.join(sgl_accts.split('credit')[0]))
+        crs = re.findall('\d{3,4}', ''.join(sgl_accts.split('credit')[-1])) if 'credit' in sgl_accts else None
 
         if drs and crs:
+            drs = sglify(drs)
+            crs = sglify(crs)
             sgls = list(drs + crs)
 
         elif drs:
+            drs = sglify(drs)
             sgls = list(drs)
 
         elif crs:
+            crs = sglify(crs)
             sgls = list(crs)
 
         else:
@@ -119,5 +145,6 @@ def cancel():
 
 
 if __name__ == '__main__':
-    # print(sgls('ask t f m tool for debits 3301').__dict__)
-    app.run(debug=True)
+    print(sgls('ask t f m tool for debits 801').__dict__)
+    # print(sglify(['1,010']))
+    # app.run(debug=True)

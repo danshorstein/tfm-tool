@@ -1,8 +1,13 @@
 import pandas as pd
+import os
 
 columns = ['Desc', 'Comm', 'Ref', 'BDR', 'BCR', 'PDR', 'PCR', 'MDR', 'MCR', 'Debits', 'Credits']
 
-df = pd.read_json('ussgl.json')
+directory = base_folder = os.path.abspath(os.path.dirname(__file__))
+ussgl_loc = os.path.join(directory, 'ussgl.json')
+
+df = pd.read_json(ussgl_loc)
+
 df = df[columns]
 
 def tc_lookup(drs=None, crs=None):
