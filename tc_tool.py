@@ -3,8 +3,6 @@ from flask import Flask
 from flask_ask import Ask, statement, question, session
 import re
 from ussgl import tc_lookup
-from ussgl import df
-import difflib
 
 app = Flask(__name__)
 
@@ -16,19 +14,6 @@ logging.getLogger("flask_ask").setLevel(logging.DEBUG)
 def hello():
     welcome = "Welcome! What SGLs do you want to look up?"
     return question(welcome).reprompt(welcome + 'You can say something like Debit ten ten and Credit thirteen ten.')
-
-
-def sglify(sgls_in):
-    sgls_list = str(df.Debits + df.Credits)
-    sgls_list = set(re.findall(r'(\d\d\d\d)\d\d', sgls_list))
-    sgls_out = []
-    for sgl in sgls_in:
-        try:
-            sgls_out.append(difflib.get_close_matches(sgl, sgls_list, cutoff=.7)[0])
-        except:
-            print('fuck shit up with {}'.format(sgl))
-
-    return sgls_out
 
 
 def tc_results(drs=None, crs=None):
@@ -85,20 +70,16 @@ def sgls(sgl_accts):
                              .replace(' 804', ' 8804')
 
 
-        drs = re.findall('\d{3,4}', ''.join(sgl_accts.split('credit')[0]))
-        crs = re.findall('\d{3,4}', ''.join(sgl_accts.split('credit')[-1])) if 'credit' in sgl_accts else None
+        drs = re.findall('\d{4}', ''.join(sgl_accts.split('credit')[0]))
+        crs = re.findall('\d{4}', ''.join(sgl_accts.split('credit')[-1])) if 'credit' in sgl_accts else None
 
         if drs and crs:
-            drs = sglify(drs)
-            crs = sglify(crs)
             sgls = list(drs + crs)
 
         elif drs:
-            drs = sglify(drs)
             sgls = list(drs)
 
         elif crs:
-            crs = sglify(crs)
             sgls = list(crs)
 
         else:
@@ -145,6 +126,6 @@ def cancel():
 
 
 if __name__ == '__main__':
-    print(sgls('ask t f m tool for debits 801').__dict__)
+    print(sgls('ask t f m tool for credit 2110').__dict__)
     # print(sglify(['1,010']))
     # app.run(debug=True)
